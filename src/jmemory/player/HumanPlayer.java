@@ -5,7 +5,6 @@
 package jmemory.player;
 
 import jmemory.data.Coordinate;
-import jmemory.game.GameplayState;
 import org.newdawn.slick.Image;
 
 /**
@@ -14,8 +13,8 @@ import org.newdawn.slick.Image;
  */
 public class HumanPlayer extends Player {
 
-	public HumanPlayer(String name, GameplayState gameplayState) {
-		super(name, gameplayState);
+	public HumanPlayer(String name) {
+		super(name);
 	}
 
 	@Override

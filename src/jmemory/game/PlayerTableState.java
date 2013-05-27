@@ -4,6 +4,16 @@
  */
 package jmemory.game;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import jmemory.player.AIPlayer;
@@ -29,11 +39,13 @@ public class PlayerTableState extends BasicGameState {
 	}
 	private PlayerTableState() {}
 	
-	private static float DEFAULT_DIFFICULTY = 0.5f;
-	private static Color PANEL_COLOR = new Color(0f, 0f, 0.5f, 1f);
-	private static Color WINDOW_COLOR = new Color(0f, 0f, 0f, 0.6f);
-	private static Color BORDER_COLOR = new Color(0f, 0.4f, 0.7f, 1f);
-	private static Color TEXT_COLOR = new Color(0f, 0.9f, 0.5f, 1f);
+	public static final Color PANEL_COLOR = new Color(0f, 0f, 0.5f, 1f);
+	public static final Color WINDOW_COLOR = new Color(0f, 0f, 0f, 0.6f);
+	public static final Color BORDER_COLOR = new Color(0f, 0.4f, 0.7f, 1f);
+	public static final Color TEXT_COLOR = new Color(0f, 0.9f, 0.5f, 1f);
+	private static final String SETTINGS_FILE_NAME = "settings.jmem";
+	private static final int MAX_PLAYER_NAME_LENGTH = 12;
+	private static final float DEFAULT_DIFFICULTY = 0.5f;
 	private static final char[] ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789".toCharArray();
 	
 	private boolean selectionMode = true, mousePressed = false;
@@ -44,7 +56,7 @@ public class PlayerTableState extends BasicGameState {
 	private int[] playerScores = new int[6];
 	private float[] playerDifficulties = new float[6];
 	private int nameEditFocus = -1, playerCount = 2,
-			pictureCount, minPictureCount = 4, maxPictureCount, 
+			pictureCount, maxPictureCount, 
 			lastMouseX = 0, lastMouseY = 0;
 	private GameContainer gc;
 	private StateBasedGame sbg;
@@ -132,6 +144,42 @@ public class PlayerTableState extends BasicGameState {
 		return ((mouseX - (gc.getWidth() - 800f) / 2f) - 450f) / 299f;
 	}
 	
+	private void startGame(){
+		if(pictureCount <= 0) return;
+		// construct player list
+		ArrayList<Player> players = new ArrayList<>();
+		GameplayState gs = GameplayState.getInstance();
+		for(int i=0; i<6; i++){
+			if(playerNames[i].isEmpty()) playerNames[i] = "Player " + i;
+			switch(playerTypes[i]){
+				case 1:
+					players.add(new HumanPlayer(playerNames[i]));
+					break;
+				case 2:
+					players.add(new AIPlayer(playerNames[i], playerDifficulties[i]));
+					break;
+			}
+		}
+		// save players to disk
+		try{
+			OutputStream os = new FileOutputStream(SETTINGS_FILE_NAME);
+			OutputStream bos = new BufferedOutputStream(os);
+			ObjectOutput out = new ObjectOutputStream(bos);
+			try{
+				out.writeObject(players);
+				out.writeObject(pictureCount);
+			} finally {
+				out.close();
+			}
+		} catch(Exception e){
+			System.err.println("ERROR: can't write players to file!");
+			e.printStackTrace();
+		}
+		// start game
+		gs.newGame(players, pictureCount, 4f/3f);
+		sbg.enterState(gs.getID());
+	}
+	
 	@Override
 	public int getID() {
 		return 1;
@@ -141,10 +189,26 @@ public class PlayerTableState extends BasicGameState {
 	public void init(GameContainer gc, StateBasedGame sbg) throws SlickException {
 		this.gc = gc;
 		this.sbg = sbg;
-		minPictureCount = 4;
-		maxPictureCount = 8;
-		pictureCount = (minPictureCount + maxPictureCount) / 2;
+		maxPictureCount = 0;
+		pictureCount = 0;
 		for(int i=0; i<6; i++) playerDifficulties[i] = DEFAULT_DIFFICULTY;
+		// read players from disk, if there is a save file
+		ArrayList<Player> players = null;
+		try{
+			InputStream is = new FileInputStream(SETTINGS_FILE_NAME);
+			InputStream bis = new BufferedInputStream(is);
+			ObjectInput in = new ObjectInputStream(bis);
+			try{
+				players = (ArrayList<Player>)in.readObject();
+				pictureCount = (Integer) in.readObject();
+			} finally {
+				in.close();
+			}
+		} catch(Exception e){
+			System.err.println("ERROR: can't read players from file!");
+			e.printStackTrace();
+		}
+		if(players != null) setPlayers(players);
 	}
 
 	@Override
@@ -178,25 +242,11 @@ public class PlayerTableState extends BasicGameState {
 					playerDifficulties[y-3] = d;
 				}
 			}
-			if(x == 6 && y == 10) pictureCount = Math.max(minPictureCount, pictureCount - 1);
+			if(x == 6 && y == 10) pictureCount = Math.max(2, pictureCount - 1);
 			if(x == 8 && y == 10) pictureCount = Math.min(maxPictureCount, pictureCount + 1);
 			if(x >= 10 && x < 13 && y == 10){
 				// start game button pressed. start game!
-				ArrayList<Player> players = new ArrayList<>();
-				GameplayState gs = GameplayState.getInstance();
-				for(int i=0; i<6; i++){
-					if(playerNames[i].isEmpty()) playerNames[i] = "Player " + i;
-					switch(playerTypes[i]){
-						case 1:
-							players.add(new HumanPlayer(playerNames[i], gs));
-							break;
-						case 2:
-							players.add(new AIPlayer(playerNames[i], gs, playerDifficulties[i]));
-							break;
-					}
-				}
-				gs.newGame(players, pictureCount, 4f/3f);
-				sbg.enterState(gs.getID());
+				startGame();
 				return;
 			}
 		} else {
@@ -249,7 +299,7 @@ public class PlayerTableState extends BasicGameState {
 			if(newValue > 0){
 				pictureCount = Math.min(maxPictureCount, pictureCount + 1);
 			} else {
-				pictureCount = Math.max(minPictureCount, pictureCount - 1);
+				pictureCount = Math.max(2, pictureCount - 1);
 			}
 		}
 	}
@@ -259,6 +309,9 @@ public class PlayerTableState extends BasicGameState {
 		if(nameEditFocus >= 0){
 			String s = playerNames[nameEditFocus];
 			switch(key){
+				case Input.KEY_ENTER:
+						nameEditFocus = -1;
+					break;
 				case Input.KEY_TAB:
 						while(playerTypes[nameEditFocus] != 0) nameEditFocus = (nameEditFocus + 1) % 6;
 					break;
@@ -266,6 +319,7 @@ public class PlayerTableState extends BasicGameState {
 					if(!s.isEmpty()) playerNames[nameEditFocus] = s.substring(0, s.length()-1);
 					break;
 				default:
+					if(playerNames[nameEditFocus].length() >= MAX_PLAYER_NAME_LENGTH) return;
 					boolean hit = false;
 					for(char ch : ALLOWED_CHARS) if(ch == c){
 						hit = true;
@@ -280,7 +334,8 @@ public class PlayerTableState extends BasicGameState {
 
 	@Override
 	public void render(GameContainer gc, StateBasedGame sbg, Graphics grphcs) throws SlickException {
-		//selectionMode = false;
+		grphcs.translate((gc.getWidth() - 800) / 2, (gc.getHeight() - 600) / 2);
+		
 		grphcs.setColor(PANEL_COLOR);
 		grphcs.fillRect(0, 0, 800, 600);
 		
@@ -377,7 +432,10 @@ public class PlayerTableState extends BasicGameState {
 
 	@Override
 	public void update(GameContainer gc, StateBasedGame sbg, int i) throws SlickException {
-		
+		if(pictureCount < 2 || pictureCount >= maxPictureCount){
+			maxPictureCount = GameplayState.getInstance().getMaxPictureCount();
+			pictureCount = (maxPictureCount + 1) / 2;
+		}
 	}
 	
 }

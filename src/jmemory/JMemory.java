@@ -22,7 +22,7 @@ public class JMemory {
 	 */
 	public static void main(String[] args) {
 		try {
-			AppGameContainer c = new AppGameContainer(new MemoryGame(), 800, 600, false);
+			AppGameContainer c = new AppGameContainer(new MemoryGame(), 1024, 768, false);
 			c.setAlwaysRender(true);
 			c.start();
 		} catch (UnsupportedClassVersionError ex) {

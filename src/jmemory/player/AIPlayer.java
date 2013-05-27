@@ -123,8 +123,8 @@ public class AIPlayer extends Player {
 	private Coordinate firstPickLocation = null;
 	private LinkedList<DataItem> knowledgeBase = new LinkedList<>();
 	
-	public AIPlayer(String name, GameplayState gameplayState, float difficulty) {
-		super(name, gameplayState);
+	public AIPlayer(String name, float difficulty) {
+		super(name);
 		this.difficulty = difficulty;
 	}
 
@@ -172,7 +172,7 @@ public class AIPlayer extends Player {
 			}
 			firstPickLocation = field.getNearestValidCoord(guess);
 		}
-		getGameplayState().selectCard(firstPickLocation);
+		GameplayState.getInstance().selectCard(firstPickLocation);
 		state = State.awaitSecondPick;
 	}
 	
@@ -192,7 +192,7 @@ public class AIPlayer extends Player {
 			// fortunately, if we update the knowledge base on every notifyImage,
 			// this case does never happen.
 			System.err.println("WARNING: Second pick algorithm detected a leak in knowlege base! Image picked first was not found.");
-			getGameplayState().selectCard(field.getRandomValidCoord(firstPickLocation));
+			GameplayState.getInstance().selectCard(field.getRandomValidCoord(firstPickLocation));
 		} else {
 			// normal case
 			Coordinate guess = selectedItem.getOtherCardCoord(firstPickLocation);
@@ -201,7 +201,7 @@ public class AIPlayer extends Player {
 			} else {
 				guess = field.getNearestValidCoord(guess, firstPickLocation);
 			}
-			getGameplayState().selectCard(guess);
+			GameplayState.getInstance().selectCard(guess);
 		}
 		state = State.awaitFirstPick;
 	}

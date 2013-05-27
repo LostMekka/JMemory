@@ -4,6 +4,7 @@
  */
 package jmemory.player;
 
+import java.io.Serializable;
 import jmemory.data.Coordinate;
 import jmemory.game.GameplayState;
 import org.newdawn.slick.Image;
@@ -12,19 +13,13 @@ import org.newdawn.slick.Image;
  *
  * @author LostMekka
  */
-public abstract class Player {
+public abstract class Player implements Serializable {
 	
 	private String name;
-	private GameplayState gameplayState;
 	private int score = 0;
 
-	public Player(String name, GameplayState gameplayState) {
+	public Player(String name) {
 		this.name = name;
-		this.gameplayState = gameplayState;
-	}
-
-	public GameplayState getGameplayState() {
-		return gameplayState;
 	}
 
 	public String getName() {

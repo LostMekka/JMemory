@@ -4,6 +4,7 @@
  */
 package jmemory.game;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
@@ -40,8 +41,8 @@ public class GameplayState extends BasicGameState {
 	private static final float CARD_BORDER = 0.05f;
 	private static final int SHOW_CARDS_TIME = 1000;
 	private static final int AI_PICK_DELAY = 300;
-	
-	
+	private static float MAX_SCALE = 150f, MIN_SCALE = 20, SCALE_SPEED = 0.02f;
+
 	private enum State { waitForFistCard, waitForSecondCard, showCards }
 	
 	private boolean scrolling = false;
@@ -49,13 +50,15 @@ public class GameplayState extends BasicGameState {
 	private GameContainer gc;
 	private StateBasedGame sbg;
 	private GameField field;
-	private LinkedList<Card> allCards;
+	private LinkedList<Card> allCards = new LinkedList<>();
 	private Image backImage;
 	private ArrayList<Player> players;
 	private Player currPlayer;
 	private int currPlayerIndex, currPlayerTime, showCardsTimer;
 	private State selectionState;
 	private Coordinate cardLoc1, cardLoc2;
+	private String infoText = "INFO TEXT WAS NOT SET PROPERLY!!!";
+	private boolean leftMouseButtonDown = false, rightMouseButtonDown = false;
 
 	private float getLeftX(){
 		return centerX - gc.getWidth() / (2f * scale);
@@ -88,6 +91,9 @@ public class GameplayState extends BasicGameState {
 		currPlayerIndex = index % players.size();
 		currPlayer = players.get(currPlayerIndex);
 		selectionState = State.waitForFistCard;
+		infoText = String.format("P%d: It is %s's turn. %s collected %d cards so far.", 
+				currPlayerIndex, currPlayer.getName(), 
+				currPlayer.getName(), currPlayer.getScore());
 	}
 	
 	private void endTurn(){
@@ -127,6 +133,10 @@ public class GameplayState extends BasicGameState {
 		Random ran = new Random();
 		for(int i=0; i<count; i++) ans.add(tmp.remove(ran.nextInt(tmp.size())));
 		return ans;
+	}
+	
+	public int getMaxPictureCount(){
+		return allCards.size();
 	}
 	
 	public void selectCard(Coordinate location){
@@ -180,20 +190,18 @@ public class GameplayState extends BasicGameState {
 	public void init(GameContainer gc, StateBasedGame sbg) throws SlickException {
 		this.gc = gc;
 		this.sbg = sbg;
-		allCards = new LinkedList<>();
-		allCards.add(new Card(new Image("img/a.jpg")));
-		allCards.add(new Card(new Image("img/b.jpg")));
-		allCards.add(new Card(new Image("img/c.jpg")));
-		allCards.add(new Card(new Image("img/d.jpg")));
-		allCards.add(new Card(new Image("img/e.jpg")));
-		allCards.add(new Card(new Image("img/f.jpg")));
-		allCards.add(new Card(new Image("img/g.jpg")));
-		allCards.add(new Card(new Image("img/h.jpg")));
+		// scan img folder for images and load ALL the images!!!
+		File imgFolder = new File("img");
+		String[] allFileNames = imgFolder.list();
+		allCards.clear();
+		for(String s : allFileNames){
+			try{
+				allCards.add(new Card(new Image("img/" + s)));
+			} catch(Exception e){
+				System.err.println("ERROR: Cannot read or process image file \"" + s + "\"!");
+			}
+		}
 		backImage = new Image("sys/back.png");
-		players = new ArrayList<>(10);
-		players.add(new HumanPlayer("Mensch 1", this));
-		players.add(new AIPlayer("AI 1", this, 0.7f));
-		newGame(players, 8, 4f/3f);
 	}
 
 	@Override
@@ -205,9 +213,6 @@ public class GameplayState extends BasicGameState {
 	public void keyReleased(int key, char c) {
 		if(c == ' ') scrolling = false;
 	}
-
-	private boolean leftMouseButtonDown = false, rightMouseButtonDown = false;
-	private static float MAX_SCALE = 150f, MIN_SCALE = 20, SCALE_SPEED = 0.1f;
 
 	@Override
 	public void mousePressed(int button, int x, int y) {
@@ -226,6 +231,8 @@ public class GameplayState extends BasicGameState {
 		if(scrolling){
 			if(leftMouseButtonDown && !rightMouseButtonDown){
 				// scroll
+				centerX -= (newx - oldx) / scale;
+				centerY -= (newy - oldy) / scale;
 			}
 			if(rightMouseButtonDown && !leftMouseButtonDown){
 				// zoom
@@ -299,6 +306,16 @@ public class GameplayState extends BasicGameState {
 						scale * (CARD_SIZE - 2f * CARD_BORDER));
 			}
 		}
+
+		grphcs.setColor(PlayerTableState.PANEL_COLOR);
+		grphcs.fillRect(0, gc.getHeight() - 40, gc.getWidth(), 40);
+		grphcs.setColor(PlayerTableState.WINDOW_COLOR);
+		grphcs.fillRect(10, gc.getHeight() - 30, gc.getWidth() - 20, 20);
+		grphcs.setColor(PlayerTableState.BORDER_COLOR);
+		grphcs.drawLine(0, gc.getHeight() - 40, gc.getWidth(), gc.getHeight() - 40);
+		grphcs.drawRect(10, gc.getHeight() - 30, gc.getWidth() - 20, 20);
+		grphcs.setColor(PlayerTableState.TEXT_COLOR);
+		grphcs.drawString(infoText, 20, gc.getHeight() - 29);
 	}
 
 	Random r = new Random();
