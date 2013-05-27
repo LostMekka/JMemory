@@ -25,8 +25,8 @@ public class IntroState extends BasicGameState {
 	}
 	private IntroState() {}
 	
-	private static final int FADE_TIMEOUT = 1000;
-	private static final int STAY_TIMEOUT = 1000;
+	private static final int FADE_TIMEOUT = 800;
+	private static final int STAY_TIMEOUT = 2500;
 	private static final int FOLLOWUP_GAME_STATE = 1;
 	
 	private Image[] images;
@@ -58,7 +58,7 @@ public class IntroState extends BasicGameState {
 		};
 		scales = new int[]{ 4, 4 };
 		sounds = new Sound[]{
-			new Sound("sys/logo.ogg"),
+			new Sound("sys/party.wav"),
 			null,
 		};
 	}
@@ -81,7 +81,11 @@ public class IntroState extends BasicGameState {
 		timer += i;
 		while((state % 3 != 1 && timer >= FADE_TIMEOUT) || 
 				(state % 3 == 1 && timer >= STAY_TIMEOUT)){
-			timer -= FADE_TIMEOUT;
+			if(state % 3 == 1){
+				timer -= STAY_TIMEOUT;
+			} else {
+				timer -= FADE_TIMEOUT;
+			}
 			state++;
 			if(state >= images.length*3){
 				sbg.enterState(FOLLOWUP_GAME_STATE);

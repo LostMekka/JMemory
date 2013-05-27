@@ -9,7 +9,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import org.newdawn.slick.AppGameContainer;
-import org.newdawn.slick.Input;
 
 /**
  *
@@ -23,6 +22,7 @@ public class JMemory {
 	public static void main(String[] args) {
 		try {
 			AppGameContainer c = new AppGameContainer(new MemoryGame(), 1024, 768, false);
+			c.setShowFPS(false);
 			c.setAlwaysRender(true);
 			c.start();
 		} catch (UnsupportedClassVersionError ex) {

@@ -36,12 +36,12 @@ public class GameplayState extends BasicGameState {
 	}
 	private GameplayState() {}
 	
-	private static final float ANIMATION_SPEED = 3.5f;
+	private static final float ANIMATION_SPEED = 3.1f;
 	private static final float CARD_SIZE = 0.95f;
 	private static final float CARD_BORDER = 0.05f;
-	private static final int SHOW_CARDS_TIME = 1000;
-	private static final int AI_PICK_DELAY = 300;
-	private static float MAX_SCALE = 150f, MIN_SCALE = 20, SCALE_SPEED = 0.02f;
+	private static final int SHOW_CARDS_TIME = 1500;
+	private static final int AI_PICK_DELAY = 500;
+	private static float MAX_SCALE = 200f, MIN_SCALE = 20, SCALE_SPEED = 0.02f;
 
 	private enum State { waitForFistCard, waitForSecondCard, showCards }
 	

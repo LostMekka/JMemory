@@ -432,9 +432,9 @@ public class PlayerTableState extends BasicGameState {
 
 	@Override
 	public void update(GameContainer gc, StateBasedGame sbg, int i) throws SlickException {
-		if(pictureCount < 2 || pictureCount >= maxPictureCount){
+		if(pictureCount < 2 || pictureCount > maxPictureCount){
 			maxPictureCount = GameplayState.getInstance().getMaxPictureCount();
-			pictureCount = (maxPictureCount + 1) / 2;
+			pictureCount = (maxPictureCount + 2) / 2;
 		}
 	}
 	
