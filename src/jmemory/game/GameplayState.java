@@ -18,6 +18,7 @@ import org.newdawn.slick.Color;
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.Image;
+import org.newdawn.slick.Input;
 import org.newdawn.slick.SlickException;
 import org.newdawn.slick.state.BasicGameState;
 import org.newdawn.slick.state.StateBasedGame;
@@ -205,14 +206,40 @@ public class GameplayState extends BasicGameState {
 		if(c == ' ') scrolling = false;
 	}
 
+	private boolean leftMouseButtonDown = false, rightMouseButtonDown = false;
+	private static float MAX_SCALE = 150f, MIN_SCALE = 20, SCALE_SPEED = 0.1f;
+
+	@Override
+	public void mousePressed(int button, int x, int y) {
+		if(button == Input.MOUSE_LEFT_BUTTON) leftMouseButtonDown = true;
+		if(button == Input.MOUSE_RIGHT_BUTTON) rightMouseButtonDown = true;
+	}
+
+	@Override
+	public void mouseReleased(int button, int x, int y) {
+		if(button == Input.MOUSE_LEFT_BUTTON) leftMouseButtonDown = false;
+		if(button == Input.MOUSE_RIGHT_BUTTON) rightMouseButtonDown = false;
+	}
+	
 	@Override
 	public void mouseDragged(int oldx, int oldy, int newx, int newy) {
-		
+		if(scrolling){
+			if(leftMouseButtonDown && !rightMouseButtonDown){
+				// scroll
+			}
+			if(rightMouseButtonDown && !leftMouseButtonDown){
+				// zoom
+				float f = newy - oldy;
+				scale *= Math.pow(2f, f * SCALE_SPEED);
+				if(scale < MIN_SCALE) scale = MIN_SCALE;
+				if(scale > MAX_SCALE) scale = MAX_SCALE;
+			}
+		}
 	}
 
 	@Override
 	public void mouseClicked(int button, int x, int y, int clickCount) {
-		if(currPlayer.isHuman()){
+		if(currPlayer.isHuman() && !scrolling){
 			selectCard(getCardCoordinate(x, y));
 		}
 	}

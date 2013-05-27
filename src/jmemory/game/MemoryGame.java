@@ -4,7 +4,6 @@
  */
 package jmemory.game;
 
-import jmemory.game.GameplayState;
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.SlickException;
 import org.newdawn.slick.state.StateBasedGame;
@@ -21,8 +20,8 @@ public class MemoryGame extends StateBasedGame {
 
 	@Override
 	public void initStatesList(GameContainer gc) throws SlickException {
-		addState(PlayerTableState.getInstance());
 		addState(IntroState.getInstance());
+		addState(PlayerTableState.getInstance());
 		addState(GameplayState.getInstance());
 	}
 	

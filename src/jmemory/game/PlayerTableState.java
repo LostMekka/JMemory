@@ -34,6 +34,7 @@ public class PlayerTableState extends BasicGameState {
 	private static Color WINDOW_COLOR = new Color(0f, 0f, 0f, 0.6f);
 	private static Color BORDER_COLOR = new Color(0f, 0.4f, 0.7f, 1f);
 	private static Color TEXT_COLOR = new Color(0f, 0.9f, 0.5f, 1f);
+	private static final char[] ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789".toCharArray();
 	
 	private boolean selectionMode = true, mousePressed = false;
 	private int[] playerTypes = {1, 2, 0, 0, 0, 0};
@@ -42,7 +43,9 @@ public class PlayerTableState extends BasicGameState {
 		"Player 4", "Player 5", "Player 6"};
 	private int[] playerScores = new int[6];
 	private float[] playerDifficulties = new float[6];
-	private int nameEditFocus = -1, pictureCount, minPictureCount = 4, maxPictureCount, lastMouseX = 0, lastMouseY = 0;
+	private int nameEditFocus = -1, playerCount = 2,
+			pictureCount, minPictureCount = 4, maxPictureCount, 
+			lastMouseX = 0, lastMouseY = 0;
 	private GameContainer gc;
 	private StateBasedGame sbg;
 	
@@ -51,6 +54,7 @@ public class PlayerTableState extends BasicGameState {
 	}
 	
 	public void setPlayers(ArrayList<Player> players){
+		playerCount = 0;
 		int i = 0;
 		Iterator<Player> iter = players.iterator();
 		while(i<6){
@@ -65,6 +69,7 @@ public class PlayerTableState extends BasicGameState {
 				}
 				playerNames[i] = p.getName();
 				playerScores[i] = p.getScore();
+				playerCount++;
 			} else {
 				playerTypes[i] = 0;
 				playerNames[i] = "player " + (i+1);
@@ -72,6 +77,46 @@ public class PlayerTableState extends BasicGameState {
 				playerDifficulties[i] = DEFAULT_DIFFICULTY;
 			}
 			i++;
+		}
+	}
+	
+	private void changePlayerType(int i, boolean forward){
+		if(forward){
+			switch(playerTypes[i]){
+				case 0:
+					playerTypes[i] = 1;
+					playerCount++;
+					break;
+				case 1:
+					playerTypes[i] = 2;
+					break;
+				case 2:
+					if(playerCount <= 1){
+						playerTypes[i] = 1;
+					} else {
+						playerTypes[i] = 0;
+						playerCount--;
+					}
+					break;
+			}
+		} else {
+			switch(playerTypes[i]){
+				case 0:
+					playerTypes[i] = 2;
+					playerCount++;
+					break;
+				case 1:
+					if(playerCount <= 1){
+						playerTypes[i] = 2;
+					} else {
+						playerTypes[i] = 0;
+						playerCount--;
+					}
+					break;
+				case 2:
+					playerTypes[i] = 1;
+					break;
+			}
 		}
 	}
 	
@@ -122,7 +167,7 @@ public class PlayerTableState extends BasicGameState {
 			if(y >= 3 && y < 9){
 				if(x >= 1 && x < 4){
 					// type field clicked
-					playerTypes[y-3] = (playerTypes[y-3] + 1) % 3;
+					changePlayerType(y-3, true);
 				}
 				if(x >= 4 && x < 9){
 					// name field clicked
@@ -140,6 +185,7 @@ public class PlayerTableState extends BasicGameState {
 				ArrayList<Player> players = new ArrayList<>();
 				GameplayState gs = GameplayState.getInstance();
 				for(int i=0; i<6; i++){
+					if(playerNames[i].isEmpty()) playerNames[i] = "Player " + i;
 					switch(playerTypes[i]){
 						case 1:
 							players.add(new HumanPlayer(playerNames[i], gs));
@@ -183,24 +229,19 @@ public class PlayerTableState extends BasicGameState {
 		if(lastMouseY >= 3 && lastMouseY < 9){
 			if(lastMouseX >= 1 && lastMouseX < 4){
 				// mouse is on type field
-				int t = playerTypes[lastMouseY-3];
-				if(newValue > 0){
-					t--;
-					if(t<0) t = 2;
-				} else {
-					t = (t + 1) % 3;
-				}
-				playerTypes[lastMouseY-3] = t;
+				changePlayerType(lastMouseY-3, (newValue < 0));
 			}
 			if(lastMouseX >= 9 && lastMouseX < 15){
-				// mouse is on difficulty field
-				float d = playerDifficulties[lastMouseY-3];
-				if(newValue > 0){
-					d = Math.min(1f, (float)Math.floor(d * 10f + 1f) / 10f);
-				} else {
-					d = Math.max(0f, (float)Math.ceil(d * 10f - 1f) / 10f);
+				// mouse is on difficulty field (change diff only if player is a bot)
+				if(playerTypes[lastMouseY-3] == 2){
+					float d = playerDifficulties[lastMouseY-3];
+					if(newValue > 0){
+						d = Math.min(1f, (float)Math.floor(d * 10f + 1f) / 10f);
+					} else {
+						d = Math.max(0f, (float)Math.ceil(d * 10f - 1f) / 10f);
+					}
+					playerDifficulties[lastMouseY-3] = d;
 				}
-				playerDifficulties[lastMouseY-3] = d;
 			}
 		}
 		if(lastMouseY == 10 && lastMouseX == 7){
@@ -209,6 +250,30 @@ public class PlayerTableState extends BasicGameState {
 				pictureCount = Math.min(maxPictureCount, pictureCount + 1);
 			} else {
 				pictureCount = Math.max(minPictureCount, pictureCount - 1);
+			}
+		}
+	}
+
+	@Override
+	public void keyPressed(int key, char c) {
+		if(nameEditFocus >= 0){
+			String s = playerNames[nameEditFocus];
+			switch(key){
+				case Input.KEY_TAB:
+						while(playerTypes[nameEditFocus] != 0) nameEditFocus = (nameEditFocus + 1) % 6;
+					break;
+				case Input.KEY_BACK:
+					if(!s.isEmpty()) playerNames[nameEditFocus] = s.substring(0, s.length()-1);
+					break;
+				default:
+					boolean hit = false;
+					for(char ch : ALLOWED_CHARS) if(ch == c){
+						hit = true;
+						break;
+					}
+					if(!hit) return;
+					playerNames[nameEditFocus] = s + c;
+					break;
 			}
 		}
 	}
@@ -255,7 +320,11 @@ public class PlayerTableState extends BasicGameState {
 			if(t == 0){
 				grphcs.drawString("---", 305, i*50 + 166);
 			} else {
-				grphcs.drawString(playerNames[i], 220, i*50 + 166);
+				if(i == nameEditFocus){
+					grphcs.drawString(playerNames[i] + "_", 220, i*50 + 166);
+				} else {
+					grphcs.drawString(playerNames[i], 220, i*50 + 166);
+				}
 			}
 			if(selectionMode){
 				if(t == 2){
